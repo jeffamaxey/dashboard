@@ -46,13 +46,12 @@ class ApiGitKey(Resource):
         service_level = args["service_level"]
         string_data = load_secret(project_id, application_id, service_level, GIT_SECRET_PREFIX)
 
-        response_body = dict()
-        if GIT_ID_RSA in string_data and GIT_CONFIG in string_data:
-            response_body[GIT_ID_RSA] = string_data[GIT_ID_RSA]
-            response_body[GIT_CONFIG] = string_data[GIT_CONFIG]
-        else:
+        if GIT_ID_RSA not in string_data or GIT_CONFIG not in string_data:
             raise RekcurdDashboardException("No git key secret found.")
-        return response_body
+        return {
+            GIT_ID_RSA: string_data[GIT_ID_RSA],
+            GIT_CONFIG: string_data[GIT_CONFIG],
+        }
 
     @kubernetes_secret_api_namespace.marshal_with(success_or_not)
     @kubernetes_secret_api_namespace.expect(git_key_parser)
@@ -65,7 +64,7 @@ class ApiGitKey(Resource):
         except NotFound:
             raise RekcurdDashboardException("No Kubernetes is registered")
         except:
-            string_data = dict()
+            string_data = {}
         if GIT_ID_RSA in string_data or GIT_CONFIG in string_data:
             raise RekcurdDashboardException("Git key secret already exist.")
         string_data[GIT_ID_RSA] = args[GIT_ID_RSA]

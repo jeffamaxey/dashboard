@@ -133,8 +133,6 @@ class ApiApplicationId(Resource):
             db.session.flush()
         else:
             """Otherwise, delete DB entry."""
-            # TODO: Kill service process.
-            pass
         db.session.delete(application_model)
         db.session.commit()
         db.session.close()

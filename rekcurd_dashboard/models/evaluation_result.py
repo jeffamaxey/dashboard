@@ -41,10 +41,7 @@ class EvaluationResultModel(db.Model):
 
     @result.setter
     def result(self, value):
-        if isinstance(value, dict):
-            res = json.dumps(value)
-        else:
-            res = value
+        res = json.dumps(value) if isinstance(value, dict) else value
         self._result = res
 
     @property

@@ -40,7 +40,7 @@ with open('requirements.txt') as f:
         line = line.strip()
         if ';' in line:
             requirement, _, specifier = line.partition(';')
-            for_specifier = EXTRAS.setdefault(':{}'.format(specifier), [])
+            for_specifier = EXTRAS.setdefault(f':{specifier}', [])
             for_specifier.append(requirement)
         else:
             REQUIRES.append(line)
@@ -71,17 +71,20 @@ setup(
     install_requires=REQUIRES,
     tests_require=TESTS_REQUIRES,
     extras_require=EXTRAS,
-    packages=['rekcurd_dashboard', 'rekcurd_dashboard.apis',
-              'rekcurd_dashboard.auth', 'rekcurd_dashboard.console_scripts',
-              'rekcurd_dashboard.core', 'rekcurd_dashboard.data_servers',
-              'rekcurd_dashboard.logger', 'rekcurd_dashboard.models',
-              'rekcurd_dashboard.protobuf', 'rekcurd_dashboard.utils'],
+    packages=[
+        'rekcurd_dashboard',
+        'rekcurd_dashboard.apis',
+        'rekcurd_dashboard.auth',
+        'rekcurd_dashboard.console_scripts',
+        'rekcurd_dashboard.core',
+        'rekcurd_dashboard.data_servers',
+        'rekcurd_dashboard.logger',
+        'rekcurd_dashboard.models',
+        'rekcurd_dashboard.protobuf',
+        'rekcurd_dashboard.utils',
+    ],
     package_data={
-        'rekcurd_dashboard': [
-            'template/*',
-            'static/**/*',
-            'static/**/**/*'
-        ],
+        'rekcurd_dashboard': ['template/*', 'static/**/*', 'static/**/**/*'],
     },
     include_package_data=True,
     long_description=LONG_DESCRIPTION,
@@ -90,11 +93,9 @@ setup(
             'rekcurd_dashboard=rekcurd_dashboard.console_scripts:main',
         ],
     },
-    cmdclass={
-        'sdist': rekcurd_dashboard_sdist
-    },
+    cmdclass={'sdist': rekcurd_dashboard_sdist},
     classifiers=[
-        "Development Status :: %s" % DEVELOPMENT_STATUS,
+        f"Development Status :: {DEVELOPMENT_STATUS}",
         "Environment :: Web Environment",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Intended Audience :: Developers",

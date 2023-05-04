@@ -14,7 +14,7 @@ class LdapAuthenticator(Authenticator):
         self.logger = logger
 
     def auth_user(self, username, password):
-        lobj = ldap.initialize('ldap://{}:{}'.format(self.host, self.port))
+        lobj = ldap.initialize(f'ldap://{self.host}:{self.port}')
         try:
             lobj.bind_s(self.bind_dn, self.bind_password)
             filter_str = self.search_filter % username
@@ -28,7 +28,7 @@ class LdapAuthenticator(Authenticator):
                 }
             return None
         except IndexError:
-            self.logger.error('"{}" not found'.format(username))
+            self.logger.error(f'"{username}" not found')
             return None
         except ldap.LDAPError as e:
             self.logger.error(e)

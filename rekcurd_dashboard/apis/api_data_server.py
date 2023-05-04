@@ -155,23 +155,23 @@ class ApiDataServers(Resource):
         if data_server_mode_enum == DataServerModeEnum.LOCAL:
             pass
         elif data_server_mode_enum == DataServerModeEnum.CEPH_S3:
-            if ceph_access_key and ceph_secret_key and ceph_host and \
-                    ceph_port and ceph_is_secure is not None and ceph_bucket_name:
-                pass
-            else:
+            if (
+                not ceph_access_key
+                or not ceph_secret_key
+                or not ceph_host
+                or not ceph_port
+                or ceph_is_secure is None
+                or not ceph_bucket_name
+            ):
                 raise RekcurdDashboardException(
                     "Need to set \"ceph_access_key\", \"ceph_secret_key\", \"ceph_host\", \"ceph_port\", "
                     "\"ceph_is_secure\" and \"ceph_bucket_name\"")
         elif data_server_mode_enum == DataServerModeEnum.AWS_S3:
-            if aws_bucket_name:
-                pass
-            else:
+            if not aws_bucket_name:
                 raise RekcurdDashboardException(
                     "Need to set \"aws_bucket_name\"")
         elif data_server_mode_enum == DataServerModeEnum.GCS:
-            if gcs_access_key and gcs_secret_key and gcs_bucket_name:
-                pass
-            else:
+            if not gcs_access_key or not gcs_secret_key or not gcs_bucket_name:
                 raise RekcurdDashboardException(
                     "Need to set \"gcs_access_key\", \"gcs_secret_key\" and \"gcs_bucket_name\"")
         else:
@@ -259,25 +259,27 @@ class ApiDataServers(Resource):
         if data_server_mode_enum == DataServerModeEnum.LOCAL:
             pass
         elif data_server_mode_enum == DataServerModeEnum.CEPH_S3:
-            if data_server_model.ceph_access_key and data_server_model.ceph_secret_key and \
-                    data_server_model.ceph_host and data_server_model.ceph_port and \
-                    data_server_model.ceph_is_secure is not None and data_server_model.ceph_bucket_name:
-                pass
-            else:
+            if (
+                not data_server_model.ceph_access_key
+                or not data_server_model.ceph_secret_key
+                or not data_server_model.ceph_host
+                or not data_server_model.ceph_port
+                or data_server_model.ceph_is_secure is None
+                or not data_server_model.ceph_bucket_name
+            ):
                 raise RekcurdDashboardException(
                     "Need to set \"ceph_access_key\", \"ceph_secret_key\", \"ceph_host\", \"ceph_port\", "
                     "\"ceph_is_secure\" and \"ceph_bucket_name\"")
         elif data_server_mode_enum == DataServerModeEnum.AWS_S3:
-            if data_server_model.aws_bucket_name:
-                pass
-            else:
+            if not data_server_model.aws_bucket_name:
                 raise RekcurdDashboardException(
                     "Need to set \"aws_bucket_name\"")
         elif data_server_mode_enum == DataServerModeEnum.GCS:
-            if data_server_model.gcs_access_key and data_server_model.gcs_secret_key and \
-                    data_server_model.gcs_bucket_name:
-                pass
-            else:
+            if (
+                not data_server_model.gcs_access_key
+                or not data_server_model.gcs_secret_key
+                or not data_server_model.gcs_bucket_name
+            ):
                 raise RekcurdDashboardException(
                     "Need to set \"gcs_access_key\", \"gcs_secret_key\" and \"gcs_bucket_name\"")
         else:

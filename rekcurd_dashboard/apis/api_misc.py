@@ -12,7 +12,4 @@ misc_api_namespace = Namespace('misc', description='Misc API Endpoint.')
 @misc_api_namespace.route('/settings')
 class ApiSettings(Resource):
     def get(self):
-        result = {
-            'auth': api.dashboard_config.IS_ACTIVATE_AUTH
-        }
-        return result
+        return {'auth': api.dashboard_config.IS_ACTIVATE_AUTH}

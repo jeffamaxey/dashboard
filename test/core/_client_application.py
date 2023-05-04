@@ -44,6 +44,8 @@ class Request(enum.Enum):
     EVALUATION_RESULT_REQUEST = ('my_path1', 'my_path2')
 
 
+
+
 @enum.unique
 class Response(enum.Enum):
     SERVICE_INFO_RESPONSE = rekcurd_pb2.ServiceInfoResponse(
@@ -51,8 +53,14 @@ class Response(enum.Enum):
     MODEL_RESPONSE = rekcurd_pb2.ModelResponse(status=1, message="Success.")
     UPLOAD_EVALUATION_DATA_RESPONSE = rekcurd_pb2.UploadEvaluationDataResponse(status=1, message="Success.")
     METRICS = rekcurd_pb2.EvaluationMetrics(
-        num=1, accuracy=1.0, precision=[1.0], recall=[1.0], fvalue=[1.0], option=dict(),
-        label=[rekcurd_pb2.IO(str=rekcurd_pb2.ArrString(val=["label"]))])
+        num=1,
+        accuracy=1.0,
+        precision=[1.0],
+        recall=[1.0],
+        fvalue=[1.0],
+        option={},
+        label=[rekcurd_pb2.IO(str=rekcurd_pb2.ArrString(val=["label"]))],
+    )
     EVALUATE_MODEL_RESPONSE = rekcurd_pb2.EvaluateModelResponse(metrics=METRICS)
     EVALUATION_RESULT_RESPONSE = rekcurd_pb2.EvaluationResultResponse(
         metrics=METRICS,
@@ -65,18 +73,21 @@ class Response(enum.Enum):
 
 
 def _assertServiceInfoResponse(response):
-    if Response.SERVICE_INFO_RESPONSE.value.application_name == response["application_name"] and \
-            Response.SERVICE_INFO_RESPONSE.value.service_name == response["service_name"] and \
-            Response.SERVICE_INFO_RESPONSE.value.service_level == response["service_level"]:
-        return True
-    return False
+    return (
+        Response.SERVICE_INFO_RESPONSE.value.application_name
+        == response["application_name"]
+        and Response.SERVICE_INFO_RESPONSE.value.service_name
+        == response["service_name"]
+        and Response.SERVICE_INFO_RESPONSE.value.service_level
+        == response["service_level"]
+    )
 
 
 def _assertModelResponse(response):
-    if Response.MODEL_RESPONSE.value.status == response["status"] and \
-            Response.MODEL_RESPONSE.value.message == response["message"]:
-        return True
-    return False
+    return (
+        Response.MODEL_RESPONSE.value.status == response["status"]
+        and Response.MODEL_RESPONSE.value.message == response["message"]
+    )
 
 
 def _assertEvaluationResultResponse(response_iterator):

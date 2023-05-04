@@ -38,8 +38,7 @@ class ApiProjectIdACL(Resource):
 
     @admin_api_namespace.marshal_list_with(project_role_info)
     def get(self, project_id):
-        roles = ProjectUserRoleModel.query.filter_by(project_id=project_id).all()
-        return roles
+        return ProjectUserRoleModel.query.filter_by(project_id=project_id).all()
 
     @admin_api_namespace.marshal_with(success_or_not)
     @admin_api_namespace.expect(save_acl_parser)
@@ -108,8 +107,9 @@ class ApiApplicationIdACL(Resource):
 
     @admin_api_namespace.marshal_list_with(application_role_info)
     def get(self, project_id, application_id):
-        roles = ApplicationUserRoleModel.query.filter_by(application_id=application_id).all()
-        return roles
+        return ApplicationUserRoleModel.query.filter_by(
+            application_id=application_id
+        ).all()
 
     @admin_api_namespace.marshal_with(success_or_not)
     @admin_api_namespace.expect(save_acl_parser)

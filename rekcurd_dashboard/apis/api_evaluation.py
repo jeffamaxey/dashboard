@@ -126,10 +126,11 @@ class ApiEvaluations(Resource):
             EvaluationModel.application_id == application_id,
             EvaluationModel.checksum == checksum).one_or_none()
         if evaluation_model is not None:
-            return {"status": True,
-                    "message": 'The file already exists. Description: {}'.format(
-                        evaluation_model.description),
-                    "evaluation_id": evaluation_model.evaluation_id}
+            return {
+                "status": True,
+                "message": f'The file already exists. Description: {evaluation_model.description}',
+                "evaluation_id": evaluation_model.evaluation_id,
+            }
 
         application_model: ApplicationModel = db.session.query(ApplicationModel).filter(
             ApplicationModel.application_id == application_id).first_or_404()
@@ -217,9 +218,12 @@ class ApiEvaluationIdDownload(Resource):
                                       evaluation_model.data_path,
                                       fp.name)
 
-            response = send_file(open(fp.name, 'rb'), as_attachment=True,
-                                 attachment_filename='evaluation_{}.txt'.format(evaluation_id),
-                                 mimetype='text/plain')
+            response = send_file(
+                open(fp.name, 'rb'),
+                as_attachment=True,
+                attachment_filename=f'evaluation_{evaluation_id}.txt',
+                mimetype='text/plain',
+            )
             return response
 
 
@@ -337,7 +341,7 @@ class ApiEvaluationResultId(Resource):
     def get(self, project_id: int, application_id: str, eval_result_id: int):
         """get detailed evaluation result"""
         eval_with_result = db.session.query(EvaluationModel, EvaluationResultModel)\
-            .filter(EvaluationModel.application_id == application_id,
+                .filter(EvaluationModel.application_id == application_id,
                     EvaluationResultModel.evaluation_id == EvaluationModel.evaluation_id,
                     EvaluationResultModel.evaluation_result_id == eval_result_id).one_or_none()
         if eval_with_result is None:
@@ -353,16 +357,18 @@ class ApiEvaluationResultId(Resource):
         evaluation_model = eval_with_result.EvaluationModel
         evaluation_result_model = eval_with_result.EvaluationResultModel
 
-        response_body = list(rekcurd_dashboard_client.run_evaluation_data(
-            evaluation_model.data_path, evaluation_result_model.data_path))
-        if len(response_body) == 0:
+        if response_body := list(
+            rekcurd_dashboard_client.run_evaluation_data(
+                evaluation_model.data_path, evaluation_result_model.data_path
+            )
+        ):
+            return {
+                'status': all(r['status'] for r in response_body),
+                'metrics': evaluation_result_model.result,
+                'details': list(chain.from_iterable(r['detail'] for r in response_body))
+            }
+        else:
             raise NotFound("Result Not Found.")
-
-        return {
-            'status': all(r['status'] for r in response_body),
-            'metrics': evaluation_result_model.result,
-            'details': list(chain.from_iterable(r['detail'] for r in response_body))
-        }
 
     @evaluation_api_namespace.marshal_with(success_or_not)
     def delete(self, project_id: int, application_id: str, eval_result_id: int):
