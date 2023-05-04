@@ -36,7 +36,7 @@ class ApiServiceRoutingTest(BaseTestCase):
 
     @mock_decorator()
     def test_get(self):
-        response = self.client.get(self.__URL+'?service_level=development')
+        response = self.client.get(f'{self.__URL}?service_level=development')
         self.assertEqual(200, response.status_code)
         self.assertIsNotNone(response)
 

@@ -75,10 +75,10 @@ def update_kubernetes_deployment_info(kubernetes_model: KubernetesModel):
             continue
 
         application_id = labels["id"]
-        application_name = labels["name"]
         application_model = db.session.query(ApplicationModel).filter(
             ApplicationModel.application_id == application_id).one_or_none()
         if application_model is None:
+            application_name = labels["name"]
             application_model = ApplicationModel(
                 project_id=kubernetes_model.project_id,
                 application_id=application_id,
@@ -126,12 +126,13 @@ def update_kubernetes_deployment_info(kubernetes_model: KubernetesModel):
             service_model = ServiceModel(
                 service_id=service_id,
                 application_id=application_id,
-                display_name="{}-{}".format(service_level, service_id),
+                display_name=f"{service_level}-{service_id}",
                 service_level=service_level,
                 version=version,
                 model_id=model_model.model_id,
                 insecure_host=insecure_host,
-                insecure_port=insecure_port)
+                insecure_port=insecure_port,
+            )
             db.session.add(service_model)
             db.session.flush()
     return
@@ -203,11 +204,11 @@ def apply_rekcurd_to_kubernetes(
         git_secret = load_secret(project_id, application_id, service_level, GIT_SECRET_PREFIX)
     except:
         git_secret = None
-    volume_mounts = dict()
-    volumes = dict()
+    volume_mounts = {}
+    volumes = {}
     if git_secret:
         connector_name = "sec-git-name"
-        secret_name = "sec-{}-{}".format(GIT_SECRET_PREFIX, application_id)
+        secret_name = f"sec-{GIT_SECRET_PREFIX}-{application_id}"
         volume_mounts = {
             'volume_mounts': [
                 client.V1VolumeMount(
@@ -357,7 +358,7 @@ def apply_rekcurd_to_kubernetes(
         try:
             core_vi_api.read_namespace(name=service_level)
         except:
-            api.logger.info("\"{}\" namespace created".format(service_level))
+            api.logger.info(f'\"{service_level}\" namespace created')
             v1_namespace = client.V1Namespace(
                 api_version="v1",
                 kind="Namespace",
@@ -376,8 +377,12 @@ def apply_rekcurd_to_kubernetes(
             metadata=client.V1ObjectMeta(
                 name="deploy-{0}".format(service_id),
                 namespace=service_level,
-                labels={"rekcurd-worker": "True", "id": application_id,
-                        "name": application_name, "sel": service_id}
+                labels={
+                    "rekcurd-worker": "True",
+                    "id": application_id,
+                    "name": application_name,
+                    "sel": service_id,
+                },
             ),
             spec=client.V1DeploymentSpec(
                 min_ready_seconds=policy_wait_seconds,
@@ -391,12 +396,17 @@ def apply_rekcurd_to_kubernetes(
                     type="RollingUpdate",
                     rolling_update=client.V1RollingUpdateDeployment(
                         max_surge=policy_max_surge,
-                        max_unavailable=policy_max_unavailable)
+                        max_unavailable=policy_max_unavailable,
+                    ),
                 ),
                 template=client.V1PodTemplateSpec(
                     metadata=client.V1ObjectMeta(
-                        labels={"rekcurd-worker": "True", "id": application_id,
-                                "name": application_name, "sel": service_id}
+                        labels={
+                            "rekcurd-worker": "True",
+                            "id": application_id,
+                            "name": application_name,
+                            "sel": service_id,
+                        }
                     ),
                     spec=client.V1PodSpec(
                         affinity=client.V1Affinity(
@@ -409,13 +419,13 @@ def apply_rekcurd_to_kubernetes(
                                                     client.V1LabelSelectorRequirement(
                                                         key="id",
                                                         operator="In",
-                                                        values=[service_id]
+                                                        values=[service_id],
                                                     )
                                                 ]
                                             ),
-                                            topology_key="kubernetes.io/hostname"
+                                            topology_key="kubernetes.io/hostname",
                                         ),
-                                        weight=100
+                                        weight=100,
                                     )
                                 ]
                             )
@@ -427,17 +437,19 @@ def apply_rekcurd_to_kubernetes(
                                 image_pull_policy="Always",
                                 name=service_id,
                                 ports=[
-                                    client.V1ContainerPort(container_port=insecure_port)
+                                    client.V1ContainerPort(
+                                        container_port=insecure_port
+                                    )
                                 ],
                                 resources=client.V1ResourceRequirements(
                                     limits={
-                                        "cpu": str(resource_limit_cpu),
-                                        "memory": resource_limit_memory
+                                        "cpu": resource_limit_cpu,
+                                        "memory": resource_limit_memory,
                                     },
                                     requests={
-                                        "cpu": str(resource_request_cpu),
-                                        "memory": resource_request_memory
-                                    }
+                                        "cpu": resource_request_cpu,
+                                        "memory": resource_request_memory,
+                                    },
                                 ),
                                 security_context=client.V1SecurityContext(
                                     privileged=True
@@ -447,9 +459,9 @@ def apply_rekcurd_to_kubernetes(
                         ],
                         node_selector={"host": service_level},
                         **volumes
-                    )
-                )
-            )
+                    ),
+                ),
+            ),
         )
         apps_v1_api = client.AppsV1Api()
         if is_creation_mode:
@@ -670,8 +682,11 @@ def delete_kubernetes_deployment(kubernetes_models: list, application_id: str, s
             name="ing-vs-{0}".format(application_id),
         )
         routes = ingress_virtual_service_body["spec"]["http"][0]["route"]
-        new_routes = [route for route in routes if route["destination"]["host"] != "svc-{0}".format(service_id)]
-        if new_routes:
+        if new_routes := [
+            route
+            for route in routes
+            if route["destination"]["host"] != "svc-{0}".format(service_id)
+        ]:
             weights = [route["weight"] for route in new_routes]
             norm_factor = 100.0/sum(weights)
             for route in new_routes:
@@ -701,8 +716,8 @@ def delete_kubernetes_deployment(kubernetes_models: list, application_id: str, s
 
 def apply_new_route_weight(
         project_id: int, application_id: str, service_level: str, service_ids: list, service_weights: list):
-    service_weight_dict = dict()
-    service_weight_checker = list()
+    service_weight_dict = {}
+    service_weight_checker = []
     for i in range(len(service_ids)):
         key = service_ids[i]
         service_weight_dict[key] = int(service_weights[i])
@@ -778,29 +793,30 @@ def load_kubernetes_deployment_info(project_id: int, application_id: str, servic
         namespace=service_model.service_level
     )
 
-    deployment_info = {}
     filepath = None
-    deployment_info["application_name"] = v1_deployment.metadata.labels["name"]
-    deployment_info["service_id"] = service_id
+    deployment_info = {
+        "application_name": v1_deployment.metadata.labels["name"],
+        "service_id": service_id,
+    }
     for env_ent in v1_deployment.spec.template.spec.containers[0].env:
-        if env_ent.name == "REKCURD_SERVICE_UPDATE_FLAG":
-            deployment_info["commit_message"] = env_ent.value
+        if env_ent.name == "REKCURD_GRPC_PROTO_VERSION":
+            deployment_info["version"] = env_ent.value
+        elif env_ent.name == "REKCURD_MODEL_FILE_PATH":
+            filepath = env_ent.value
+        elif env_ent.name == "REKCURD_SERVICE_BOOT_SHELL":
+            deployment_info["service_boot_script"] = env_ent.value
+        elif env_ent.name == "REKCURD_SERVICE_GIT_BRANCH":
+            deployment_info["service_git_branch"] = env_ent.value
+        elif env_ent.name == "REKCURD_SERVICE_GIT_URL":
+            deployment_info["service_git_url"] = env_ent.value
         elif env_ent.name == "REKCURD_SERVICE_INSECURE_HOST":
             deployment_info["insecure_host"] = env_ent.value
         elif env_ent.name == "REKCURD_SERVICE_INSECURE_PORT":
             deployment_info["insecure_port"] = int(env_ent.value)
         elif env_ent.name == "REKCURD_SERVICE_LEVEL":
             deployment_info["service_level"] = env_ent.value
-        elif env_ent.name == "REKCURD_GRPC_PROTO_VERSION":
-            deployment_info["version"] = env_ent.value
-        elif env_ent.name == "REKCURD_MODEL_FILE_PATH":
-            filepath = env_ent.value
-        elif env_ent.name == "REKCURD_SERVICE_GIT_URL":
-            deployment_info["service_git_url"] = env_ent.value
-        elif env_ent.name == "REKCURD_SERVICE_GIT_BRANCH":
-            deployment_info["service_git_branch"] = env_ent.value
-        elif env_ent.name == "REKCURD_SERVICE_BOOT_SHELL":
-            deployment_info["service_boot_script"] = env_ent.value
+        elif env_ent.name == "REKCURD_SERVICE_UPDATE_FLAG":
+            deployment_info["commit_message"] = env_ent.value
     model_model: ModelModel = db.session.query(ModelModel).filter(
         ModelModel.application_id == application_id, ModelModel.filepath == filepath).first_or_404()
     deployment_info["service_model_assignment"] = model_model.model_id
@@ -958,7 +974,7 @@ def load_secret(project_id: int, application_id: str, service_level: str, name_p
     from kubernetes import client, config
     config.load_kube_config(full_config_path)
     core_v1_api = client.CoreV1Api()
-    name = "sec-{}-{}".format(name_prefix, application_id)
+    name = f"sec-{name_prefix}-{application_id}"
     secret_body = core_v1_api.read_namespaced_secret(
         name=name,
         namespace=service_level,
@@ -966,7 +982,7 @@ def load_secret(project_id: int, application_id: str, service_level: str, name_p
         export=True
     )
     string_data: dict = secret_body.data
-    for key in string_data.keys():
+    for key in string_data:
         string_data[key] = base64.b64decode(string_data[key]).decode()
     return string_data
 
@@ -981,7 +997,7 @@ def apply_secret(project_id: int, application_id: str, service_level: str, strin
         from kubernetes import client, config
         config.load_kube_config(full_config_path)
         core_v1_api = client.CoreV1Api()
-        name = "sec-{}-{}".format(name_prefix, application_id)
+        name = f"sec-{name_prefix}-{application_id}"
         v1_secret = client.V1Secret(
             api_version="v1",
             kind="Secret",
@@ -1027,7 +1043,7 @@ def delete_secret(project_id: int, application_id: str, service_level: str, name
     config.load_kube_config(full_config_path)
     core_v1_api = client.CoreV1Api()
     try:
-        name = "sec-{}-{}".format(name_prefix, application_id)
+        name = f"sec-{name_prefix}-{application_id}"
         core_v1_api.read_namespaced_secret(
             name=name,
             namespace=service_level,

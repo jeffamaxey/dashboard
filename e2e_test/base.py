@@ -166,7 +166,7 @@ class BaseTestCase(TestCase):
                 timeout -= 1
                 sleep(1)
             except Exception as e:
-                print(str(e))
+                print(e)
         else:
             self.fail("Worker doesn't run successfully.")
 
@@ -181,14 +181,14 @@ def start_worker(config_path, namespace='development'):
         app_v1 = k8s_client.AppsV1Api()
         app_v1.create_namespaced_deployment(body=WorkerConfiguration.deployment, namespace=namespace)
     except Exception as e:
-        print(str(e))
+        print(e)
     # Service
     try:
         print('   Requested! (Service)')
         core_v1 = k8s_client.CoreV1Api()
         core_v1.create_namespaced_service(body=WorkerConfiguration.service, namespace=namespace)
     except Exception as e:
-        print(str(e))
+        print(e)
     # Autoscaling
     try:
         print('   Requested! (Autoscaling)')
@@ -196,7 +196,7 @@ def start_worker(config_path, namespace='development'):
         autoscaling_v1_api.create_namespaced_horizontal_pod_autoscaler(
             body=WorkerConfiguration.autoscaling, namespace=namespace)
     except Exception as e:
-        print(str(e))
+        print(e)
     # Istio
     try:
         print('   Requested! (Istio)')
@@ -205,7 +205,7 @@ def start_worker(config_path, namespace='development'):
             group="networking.istio.io", version="v1alpha3", namespace="development",
             plural="virtualservices", body=WorkerConfiguration.virtualservice)
     except Exception as e:
-        print(str(e))
+        print(e)
 
 
 def stop_worker(config_path, namespaces=('development', 'beta')):
@@ -243,12 +243,11 @@ def create_project_model(project_id=TEST_PROJECT_ID, save=False) -> ProjectModel
     project_model = ProjectModel(
         project_id=project_id, display_name=display_name, use_kubernetes=True)
     project_model_ = ProjectModel.query.filter_by(project_id=project_id).one_or_none()
-    if save and project_model_ is None:
-        db.session.add(project_model)
-        db.session.commit()
-        return project_model
-    else:
+    if not save or project_model_ is not None:
         return project_model_
+    db.session.add(project_model)
+    db.session.commit()
+    return project_model
 
 
 def create_kubernetes_model(project_id=TEST_PROJECT_ID, save=False, first=True) -> KubernetesModel:
@@ -265,24 +264,22 @@ def create_kubernetes_model(project_id=TEST_PROJECT_ID, save=False, first=True) 
         exposed_host=exposed_host, exposed_port=exposed_port)
     kubernetes_model_ = KubernetesModel.query.filter_by(
         project_id=project_id, display_name=display_name).one_or_none()
-    if save and kubernetes_model_ is None:
-        db.session.add(kubernetes_model)
-        db.session.commit()
-        return kubernetes_model
-    else:
+    if not save or kubernetes_model_ is not None:
         return kubernetes_model_
+    db.session.add(kubernetes_model)
+    db.session.commit()
+    return kubernetes_model
 
 
 def create_data_server_model(
         project_id=TEST_PROJECT_ID, mode=DataServerModeEnum.LOCAL, save=False) -> DataServerModel:
     data_server_model = DataServerModel(project_id=project_id, data_server_mode=mode)
     data_server_model_ = DataServerModel.query.filter_by(project_id=project_id).one_or_none()
-    if save and data_server_model_ is None:
-        db.session.add(data_server_model)
-        db.session.commit()
-        return data_server_model
-    else:
+    if not save or data_server_model_ is not None:
         return data_server_model_
+    db.session.add(data_server_model)
+    db.session.commit()
+    return data_server_model
 
 
 def create_application_model(
@@ -294,12 +291,11 @@ def create_application_model(
     application_model_ = ApplicationModel.query.filter_by(
         application_name=application_name,
         project_id=project_id).one_or_none()
-    if save and application_model_ is None:
-        db.session.add(application_model)
-        db.session.commit()
-        return application_model
-    else:
+    if not save or application_model_ is not None:
         return application_model_
+    db.session.add(application_model)
+    db.session.commit()
+    return application_model
 
 
 def create_model_model(
@@ -308,12 +304,11 @@ def create_model_model(
     model_model = ModelModel(
         model_id=model_id, application_id=application_id, description=f'{model_type}', filepath=f'{model_type}.pkl')
     model_model_ = ModelModel.query.filter_by(model_id=model_id).one_or_none()
-    if save and model_model_ is None:
-        db.session.add(model_model)
-        db.session.commit()
-        return model_model
-    else:
+    if not save or model_model_ is not None:
         return model_model_
+    db.session.add(model_model)
+    db.session.commit()
+    return model_model
 
 
 def create_service_model(
@@ -329,9 +324,8 @@ def create_service_model(
         insecure_host=insecure_host, insecure_port=insecure_port)
     service_model_ = ServiceModel.query.filter_by(
         application_id=application_id, display_name=display_name).one_or_none()
-    if save and service_model_ is None:
-        db.session.add(service_model)
-        db.session.commit()
-        return service_model
-    else:
+    if not save or service_model_ is not None:
         return service_model_
+    db.session.add(service_model)
+    db.session.commit()
+    return service_model

@@ -108,26 +108,19 @@ def fetch_project_role(user_id, project_id):
     role: ProjectUserRoleModel = db.session.query(ProjectUserRoleModel).filter(
         ProjectUserRoleModel.project_id == project_id,
         ProjectUserRoleModel.user_id == user_id).one_or_none()
-    if role is None:
-        return None
-    else:
-        return role.project_role
+    return None if role is None else role.project_role
 
 
 def fetch_application_role(user_id, application_id):
     role: ApplicationUserRoleModel = db.session.query(ApplicationUserRoleModel).filter(
         ApplicationUserRoleModel.application_id == application_id,
         ApplicationUserRoleModel.user_id == user_id).one_or_none()
-    if role is None:
-        # applications which don't have users are also accesssible as owner
-        roles = db.session.query(ApplicationUserRoleModel).filter(
-            ApplicationUserRoleModel.application_id == application_id).count()
-        if roles == 0:
-            return ApplicationRole.admin
-        else:
-            return ApplicationRole.viewer
-    else:
+    if role is not None:
         return role.application_role
+    # applications which don't have users are also accesssible as owner
+    roles = db.session.query(ApplicationUserRoleModel).filter(
+        ApplicationUserRoleModel.application_id == application_id).count()
+    return ApplicationRole.admin if roles == 0 else ApplicationRole.viewer
 
 
 def auth_required(fn):
@@ -135,27 +128,28 @@ def auth_required(fn):
     def wrapper(*args, **kwargs):
         if not auth.is_enabled() or request.path.startswith('/doc/') or request.path.startswith('/api/settings'):
             return fn(*args, **kwargs)
-        else:
-            @jwt_required
-            def run():
-                project_id = kwargs.get('project_id')
-                if project_id is None:
-                    return fn(*args, **kwargs)
-                user_id = get_jwt_identity()
-                project_user_role = fetch_project_role(user_id, project_id)
-                if project_user_role is None:
+        @jwt_required
+        def run():
+            project_id = kwargs.get('project_id')
+            if project_id is None:
+                return fn(*args, **kwargs)
+            user_id = get_jwt_identity()
+            project_user_role = fetch_project_role(user_id, project_id)
+            if project_user_role is None:
+                raise ProjectUserRoleException("ProjectUserRoleException")
+            application_id = kwargs.get('application_id')
+            if application_id is None:
+                if request.method != 'GET' and project_user_role == ProjectRole.member:
                     raise ProjectUserRoleException("ProjectUserRoleException")
-                application_id = kwargs.get('application_id')
-                if application_id is None:
-                    if request.method != 'GET' and project_user_role == ProjectRole.member:
-                        raise ProjectUserRoleException("ProjectUserRoleException")
-                    else:
-                        return fn(*args, **kwargs)
-
-                application_user_role = fetch_application_role(user_id, application_id)
-                if request.method != 'GET' and application_user_role == ApplicationRole.viewer:
-                    raise ApplicationUserRoleException("ApplicationUserRoleException")
                 else:
                     return fn(*args, **kwargs)
-            return run()
+
+            application_user_role = fetch_application_role(user_id, application_id)
+            if request.method != 'GET' and application_user_role == ApplicationRole.viewer:
+                raise ApplicationUserRoleException("ApplicationUserRoleException")
+            else:
+                return fn(*args, **kwargs)
+
+        return run()
+
     return wrapper

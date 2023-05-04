@@ -64,7 +64,7 @@ class RekcurdDashboardClient:
                            ('x-rekcurd-sevice-level', service_level),
                            ('x-rekcurd-grpc-version', rekcurd_grpc_version)]
 
-        channel = grpc.insecure_channel("{}:{}".format(host, port))
+        channel = grpc.insecure_channel(f"{host}:{port}")
         self.stub = rekcurd_pb2_grpc.RekcurdDashboardStub(channel)
 
     @property
@@ -95,17 +95,13 @@ class RekcurdDashboardClient:
     def run_service_info(self):
         request = rekcurd_pb2.ServiceInfoRequest()
         response_protobuf = self.stub.ServiceInfo(request, metadata=self.__metadata)
-        response = protobuf_to_dict(response_protobuf,
-                                    including_default_value_fields=True)
-        return response
+        return protobuf_to_dict(
+            response_protobuf, including_default_value_fields=True
+        )
 
     def __upload_model_request(self, model_path:str, f:FileStorage):
         for data in ProtobufUtil.stream_file(f):
-            request = rekcurd_pb2.UploadModelRequest(
-                path=model_path,
-                data=data
-            )
-            yield request
+            yield rekcurd_pb2.UploadModelRequest(path=model_path, data=data)
 
     @error_handling({"status": False})
     def run_upload_model(self, model_path:str, f:FileStorage):
@@ -139,40 +135,38 @@ class RekcurdDashboardClient:
 
     def __upload_eval_data_request(self, f:FileStorage, data_path:str):
         for data in ProtobufUtil.stream_file(f):
-            request = rekcurd_pb2.UploadEvaluationDataRequest(data=data, data_path=data_path)
-            yield request
+            yield rekcurd_pb2.UploadEvaluationDataRequest(data=data, data_path=data_path)
 
     @error_handling({"status": False})
     def run_upload_evaluation_data(self, f:FileStorage, data_path:str):
         request_iterator = self.__upload_eval_data_request(f, data_path)
-        response = protobuf_to_dict(self.stub.UploadEvaluationData(request_iterator, metadata=self.__metadata),
-                                    including_default_value_fields=True)
-        return response
+        return protobuf_to_dict(
+            self.stub.UploadEvaluationData(
+                request_iterator, metadata=self.__metadata
+            ),
+            including_default_value_fields=True,
+        )
 
     def __get_value_from_io(self, io:rekcurd_pb2.IO):
-        if io.WhichOneof('io_oneof') == 'str':
-            val = io.str.val
-        else:
-            val = io.tensor.val
-
-        if len(val) == 1:
-            return val[0]
-        else:
-            return list(val)
+        val = io.str.val if io.WhichOneof('io_oneof') == 'str' else io.tensor.val
+        return val[0] if len(val) == 1 else list(val)
 
     @error_handling({"status": False})
     def run_evaluation_data(self, data_path:str, result_path:str):
         request = rekcurd_pb2.EvaluationResultRequest(data_path=data_path, result_path=result_path)
         for raw_response in self.stub.EvaluationResult(request, metadata=self.__metadata):
-            details = []
-            for detail in raw_response.detail:
-                details.append(dict(
+            details = [
+                dict(
                     protobuf_to_dict(detail, including_default_value_fields=True),
                     input=self.__get_value_from_io(detail.input),
                     label=self.__get_value_from_io(detail.label),
                     output=self.__get_value_from_io(detail.output),
-                    score=detail.score[0] if len(detail.score) == 1 else list(detail.score)
-                ))
+                    score=detail.score[0]
+                    if len(detail.score) == 1
+                    else list(detail.score),
+                )
+                for detail in raw_response.detail
+            ]
             metrics = raw_response.metrics
             metrics_response = dict(protobuf_to_dict(metrics, including_default_value_fields=True),
                                     label=[self.__get_value_from_io(l) for l in metrics.label])

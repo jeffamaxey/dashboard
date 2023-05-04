@@ -10,31 +10,47 @@ from e2e_test.base import (
 
 def get_default_args():
     """ This function returns arguments for some requests."""
-    args = {}
-    args['application_name'] = WorkerConfiguration.deployment['metadata']['labels']['name']
-    args['service_level'] = WorkerConfiguration.deployment['metadata']['namespace']
     container = WorkerConfiguration.deployment['spec']['template']['spec']['containers'][0]
     envs = {env['name']: env['value'] for env in container['env']}
-    args['insecure_port'] = container['ports'][0]['containerPort']
-    args['replicas_default'] = WorkerConfiguration.deployment['spec']['replicas']
-    args['replicas_minimum'] = WorkerConfiguration.autoscaling['spec']['minReplicas']
-    args['replicas_maximum'] = WorkerConfiguration.autoscaling['spec']['maxReplicas']
-    args['autoscale_cpu_threshold'] = \
-        WorkerConfiguration.autoscaling['spec']['metrics'][0]['resource']['targetAverageUtilization']
-    args['policy_max_surge'] = WorkerConfiguration.deployment['spec']['strategy']['rollingUpdate']['maxSurge']
-    args['policy_max_unavailable'] = \
-        WorkerConfiguration.deployment['spec']['strategy']['rollingUpdate']['maxUnavailable']
-    args['policy_wait_seconds'] = WorkerConfiguration.deployment['spec']['minReadySeconds']
-    args['container_image'] = container['image']
-    args['resource_request_cpu'] = container['resources']['requests']['cpu']
-    args['resource_request_memory'] = container['resources']['requests']['memory']
-    args['resource_limit_cpu'] = container['resources']['limits']['cpu']
-    args['resource_limit_memory'] = container['resources']['limits']['memory']
-    args['commit_message'] = 'A message.'
-    args['service_git_url'] = envs['REKCURD_SERVICE_GIT_URL']
-    args['service_git_branch'] = envs['REKCURD_SERVICE_GIT_BRANCH']
-    args['service_boot_script'] = envs['REKCURD_SERVICE_BOOT_SHELL']
-    return args
+    return {
+        'application_name': WorkerConfiguration.deployment['metadata'][
+            'labels'
+        ]['name'],
+        'service_level': WorkerConfiguration.deployment['metadata'][
+            'namespace'
+        ],
+        'insecure_port': container['ports'][0]['containerPort'],
+        'replicas_default': WorkerConfiguration.deployment['spec']['replicas'],
+        'replicas_minimum': WorkerConfiguration.autoscaling['spec'][
+            'minReplicas'
+        ],
+        'replicas_maximum': WorkerConfiguration.autoscaling['spec'][
+            'maxReplicas'
+        ],
+        'autoscale_cpu_threshold': WorkerConfiguration.autoscaling['spec'][
+            'metrics'
+        ][0]['resource']['targetAverageUtilization'],
+        'policy_max_surge': WorkerConfiguration.deployment['spec']['strategy'][
+            'rollingUpdate'
+        ]['maxSurge'],
+        'policy_max_unavailable': WorkerConfiguration.deployment['spec'][
+            'strategy'
+        ]['rollingUpdate']['maxUnavailable'],
+        'policy_wait_seconds': WorkerConfiguration.deployment['spec'][
+            'minReadySeconds'
+        ],
+        'container_image': container['image'],
+        'resource_request_cpu': container['resources']['requests']['cpu'],
+        'resource_request_memory': container['resources']['requests'][
+            'memory'
+        ],
+        'resource_limit_cpu': container['resources']['limits']['cpu'],
+        'resource_limit_memory': container['resources']['limits']['memory'],
+        'commit_message': 'A message.',
+        'service_git_url': envs['REKCURD_SERVICE_GIT_URL'],
+        'service_git_branch': envs['REKCURD_SERVICE_GIT_BRANCH'],
+        'service_boot_script': envs['REKCURD_SERVICE_BOOT_SHELL'],
+    }
 
 
 class TestApiKubernetes(BaseTestCase):

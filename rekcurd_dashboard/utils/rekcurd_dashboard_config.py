@@ -53,20 +53,20 @@ class RekcurdDashboardConfig:
             with open(config_file, 'r') as f:
                 config = yaml.safe_load(f)
         else:
-            config = dict()
+            config = {}
         self.DEBUG_MODE = config.get("debug", False)
         self.SERVICE_PORT = config.get("port", self.SERVICE_PORT)
         self.DIR_KUBE_CONFIG = self.__kubeconfig_default_dir(config.get("kube_config_dir", "kube-config"))
-        config_db = config.get("db", dict())
+        config_db = config.get("db", {})
         db_mode = config_db.get("mode", "sqlite")
-        config_db_mysql = config_db.get("mysql", dict())
+        config_db_mysql = config_db.get("mysql", {})
         db_host = config_db_mysql.get("host")
         db_port = config_db_mysql.get("port")
         db_name = config_db_mysql.get("dbname")
         db_username = config_db_mysql.get("username")
         db_password = config_db_mysql.get("password")
         self.SQLALCHEMY_DATABASE_URI = \
-            self.__create_db_uri(db_mode, db_host, db_port, db_name, db_username, db_password)
+                self.__create_db_uri(db_mode, db_host, db_port, db_name, db_username, db_password)
         if 'auth' in config:
             self.IS_ACTIVATE_AUTH = True
             self.AUTH_CONFIG = config['auth']
@@ -76,7 +76,9 @@ class RekcurdDashboardConfig:
 
     def __load_from_env(self):
         self.DEBUG_MODE = os.getenv("DASHBOARD_DEBUG_MODE", "False").lower() == 'true'
-        self.SERVICE_PORT = int(os.getenv("DASHBOARD_SERVICE_PORT", "{}".format(self.__SERVICE_DEFAULT_PORT)))
+        self.SERVICE_PORT = int(
+            os.getenv("DASHBOARD_SERVICE_PORT", f"{self.__SERVICE_DEFAULT_PORT}")
+        )
         self.DIR_KUBE_CONFIG = self.__kubeconfig_default_dir(os.getenv("DASHBOARD_KUBE_DATADIR", "kube-config"))
         db_mode = os.getenv('DASHBOARD_DB_MODE')
         db_host = os.getenv('DASHBOARD_DB_MYSQL_HOST')
@@ -85,7 +87,7 @@ class RekcurdDashboardConfig:
         db_username = os.getenv('DASHBOARD_DB_MYSQL_USERNAME')
         db_password = os.getenv('DASHBOARD_DB_MYSQL_PASSWORD')
         self.SQLALCHEMY_DATABASE_URI = \
-            self.__create_db_uri(db_mode, db_host, db_port, db_name, db_username, db_password)
+                self.__create_db_uri(db_mode, db_host, db_port, db_name, db_username, db_password)
         if os.getenv('DASHBOARD_IS_AUTH', 'False').lower() == 'true':
             self.IS_ACTIVATE_AUTH = True
             self.AUTH_CONFIG = {

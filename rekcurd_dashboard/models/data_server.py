@@ -32,7 +32,7 @@ class DataServerModeEnum(enum.Enum):
         elif cls.PV.value == mode:
             return cls.PV
         else:
-            raise ValueError("'{}' is not supported as ModelModeEnum".format(mode))
+            raise ValueError(f"'{mode}' is not supported as ModelModeEnum")
 
 
 class DataServerModel(db.Model):

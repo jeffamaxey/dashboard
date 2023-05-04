@@ -201,7 +201,6 @@ class ApiKubernetesId(Resource):
 
         kubernetes_model: KubernetesModel = db.session.query(KubernetesModel).filter(
             KubernetesModel.kubernetes_id==kubernetes_id).first_or_404()
-        prev_config_path = kubernetes_model.config_path
         is_update = False
         if display_name is not None:
             is_update = True
@@ -217,6 +216,7 @@ class ApiKubernetesId(Resource):
             kubernetes_model.exposed_port = exposed_port
         if file is not None:
             is_update = True
+            prev_config_path = kubernetes_model.config_path
             kubernetes_model.config_path = config_path
             save_kubernetes_access_file(file, config_path)
             try:

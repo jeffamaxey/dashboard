@@ -94,15 +94,17 @@ class ApiServiceRouting(Resource):
         if not service_models:
             raise RekcurdDashboardException("No services available.")
 
-        service_id_name = dict()
-        for service_model in service_models:
-            service_id_name[service_model.service_id] = service_model.display_name
+        service_id_name = {
+            service_model.service_id: service_model.display_name
+            for service_model in service_models
+        }
         routes = load_istio_routing(kubernetes_model, application_model, service_level)
-        response_body = dict()
-        response_body["application_name"] = application_model.application_name
-        response_body["service_level"] = service_level
-        service_weights = list()
-        response_body["service_weights"] = service_weights
+        service_weights = []
+        response_body = {
+            "application_name": application_model.application_name,
+            "service_level": service_level,
+            "service_weights": service_weights,
+        }
         for route in routes:
             service_id = route["destination"]["host"][4:]
             display_name = service_id_name.pop(service_id)
@@ -111,11 +113,14 @@ class ApiServiceRouting(Resource):
                 "display_name": display_name,
                 "service_id": service_id,
                 "service_weight": weight})
-        for service_id, display_name in service_id_name.items():
-            service_weights.append({
+        service_weights.extend(
+            {
                 "display_name": display_name,
                 "service_id": service_id,
-                "service_weight": 0})
+                "service_weight": 0,
+            }
+            for service_id, display_name in service_id_name.items()
+        )
         return response_body
 
     @service_routing_api_namespace.marshal_with(success_or_not)

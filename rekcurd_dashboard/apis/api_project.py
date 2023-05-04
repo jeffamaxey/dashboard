@@ -59,14 +59,15 @@ class ApiProjects(Resource):
 
         project_model = db.session.query(ProjectModel).filter(
             ProjectModel.display_name == display_name).one_or_none()
-        if project_model is None:
-            project_model = ProjectModel(
-                display_name=display_name, description=description, use_kubernetes=use_kubernetes)
-            db.session.add(project_model)
-            db.session.flush()
-        else:
-            raise RekcurdDashboardException("Project name is duplicated. \"{}\"".format(display_name))
+        if project_model is not None:
+            raise RekcurdDashboardException(
+                f'Project name is duplicated. \"{display_name}\"'
+            )
 
+        project_model = ProjectModel(
+            display_name=display_name, description=description, use_kubernetes=use_kubernetes)
+        db.session.add(project_model)
+        db.session.flush()
         if api.dashboard_config.IS_ACTIVATE_AUTH:
             user_id = get_jwt_identity()
             project_user_role_model = ProjectUserRoleModel(

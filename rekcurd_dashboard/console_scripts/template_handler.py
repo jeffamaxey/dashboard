@@ -26,7 +26,7 @@ def template_handler(args: dict):
     destination = Path(args["dir"])
     if destination.name:
         if destination.exists():
-            raise CommandError("'{}' already exists".format(destination.absolute()))
+            raise CommandError(f"'{destination.absolute()}' already exists")
         destination.mkdir(parents=True, exist_ok=False)
 
     template_suffix = "-tpl"
@@ -47,9 +47,9 @@ def template_handler(args: dict):
                 new_path = Path(str(new_path)[:-len(template_suffix)])
 
             if new_path.exists():
-                raise CommandError("{} already exists, overlaying a "
-                                   "project into an existing directory"
-                                   "won't replace conflicting files".format(new_path))
+                raise CommandError(
+                    f"{new_path} already exists, overlaying a project into an existing directorywon't replace conflicting files"
+                )
 
             with old_path.open(mode='r', encoding='utf-8') as template_file:
                 content = template_file.read()
@@ -61,7 +61,5 @@ def template_handler(args: dict):
                 _make_writeable(str(new_path))
             except OSError:
                 print(
-                    "Notice: Couldn't set permission bits on {}. You're "
-                    "probably using an uncommon filesystem setup. No "
-                    "problem.".format(new_path)
+                    f"Notice: Couldn't set permission bits on {new_path}. You're probably using an uncommon filesystem setup. No problem."
                 )
